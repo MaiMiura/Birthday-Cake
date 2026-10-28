@@ -1,0 +1,331 @@
+:root {
+  --night: #140b1c;
+  --cream: #fbead8;
+  --ink: #4a2340;
+  --accent: #e0457b;
+  --font: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+  --script: "Dancing Script", "Brush Script MT", cursive;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--night);
+  color: var(--cream);
+  font-family: var(--font);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+/* ---------- 背景 ---------- */
+
+.bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bg-night {
+  background: radial-gradient(120% 90% at 50% 65%, #2b1838 0%, #170d21 55%, #0c0612 100%);
+}
+
+.room-glow {
+  background: radial-gradient(60vmax 48vmax at 50% 64%, rgba(255, 166, 77, .3), rgba(255, 140, 60, .08) 45%, transparent 70%);
+  transition: opacity .6s ease;
+}
+
+.bg-party {
+  background: linear-gradient(165deg, #ffe0ea 0%, #fff0d9 45%, #e2efff 100%);
+  opacity: 0;
+  transition: opacity 1.4s ease;
+}
+
+.is-party .bg-party { opacity: 1; }
+.is-party .room-glow { opacity: 0 !important; }
+
+#confetti {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ---------- レイアウト ---------- */
+
+.stage {
+  position: relative;
+  z-index: 1;
+  height: 100vh;
+  height: 100svh;
+  display: grid;
+  grid-template-rows: 1fr auto minmax(84px, auto);
+  justify-items: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+
+.top {
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  width: 100%;
+  max-width: 640px;
+  text-align: center;
+  padding-bottom: 1vh;
+}
+
+.top > * { grid-area: 1 / 1; }
+
+.prompt {
+  margin: 0 0 2vh;
+  font-size: clamp(1.1rem, 4.8vw, 1.6rem);
+  letter-spacing: .06em;
+  line-height: 1.6;
+  text-shadow: 0 0 18px rgba(255, 180, 90, .45);
+  transition: opacity .8s ease, transform .8s ease;
+  animation: breathe 4.5s ease-in-out infinite;
+}
+
+.is-dark .prompt,
+.is-party .prompt {
+  opacity: 0;
+  transform: translateY(-10px);
+  animation: none;
+}
+
+.cake-wrap {
+  width: min(92vw, 540px, 70vh);
+  width: min(92vw, 540px, 70svh);
+}
+
+#cake {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  cursor: pointer;
+  outline: none;
+}
+
+#cake:focus-visible {
+  filter: drop-shadow(0 0 6px rgba(255, 210, 140, .8));
+}
+
+.is-party #cake { cursor: default; }
+
+.bottom {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 12px;
+  padding-top: 2vh;
+  text-align: center;
+}
+
+/* ---------- ヒント ---------- */
+
+.hint {
+  margin: 0;
+  min-height: 1.6em;
+  font-size: .95rem;
+  letter-spacing: .04em;
+  opacity: .75;
+  transition: opacity .6s ease;
+}
+
+.hint.is-empty { opacity: 0; }
+.is-party .hint { display: none; }
+
+.hint button {
+  font: inherit;
+  color: var(--cream);
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(251, 234, 216, .45);
+  border-radius: 999px;
+  padding: .45em 1.1em;
+  cursor: pointer;
+}
+
+/* ---------- お祝い ---------- */
+
+.celebration {
+  color: var(--ink);
+  padding: 0 4px 1vh;
+  transition: opacity .5s ease;
+}
+
+.celebration.is-hiding { opacity: 0; }
+
+.celebration > * { opacity: 0; }
+.celebration .name { opacity: 1; }
+
+.hb {
+  margin: 0;
+  font-family: var(--script);
+  font-size: clamp(2rem, 9vw, 3.4rem);
+  line-height: 1.1;
+  color: var(--accent);
+}
+
+.name {
+  margin: .1em 0 0;
+  font-size: clamp(2.1rem, 11vw, 4rem);
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.name span {
+  display: inline-block;
+  opacity: 0;
+}
+
+.congrats {
+  margin: .25em 0 .6em;
+  font-size: clamp(1.2rem, 5.2vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: .05em;
+}
+
+.celebration.no-name .name { display: none; }
+.celebration.no-name .congrats {
+  font-size: clamp(1.8rem, 8vw, 2.8rem);
+  margin-top: .2em;
+}
+
+.message {
+  margin: 0 auto;
+  max-width: 30em;
+  white-space: pre-line;
+  font-size: clamp(.95rem, 3.9vw, 1.15rem);
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+
+.celebration.is-shown .hb { animation: rise .9s .1s ease-out both; }
+.celebration.is-shown .name span {
+  animation: pop .7s cubic-bezier(.2, 1.6, .4, 1) both;
+  animation-delay: calc(.45s + var(--i) * .07s);
+}
+.celebration.is-shown .congrats { animation: rise .9s calc(.7s + var(--n, 0) * .07s) ease-out both; }
+.celebration.is-shown .message { animation: rise 1.1s calc(1.2s + var(--n, 0) * .07s) ease-out both; }
+
+.again {
+  font: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #fff;
+  background: var(--ink);
+  border: 0;
+  border-radius: 999px;
+  padding: .8em 1.6em;
+  box-shadow: 0 6px 18px rgba(74, 35, 64, .25);
+  cursor: pointer;
+  animation: rise .8s 3s ease-out both;
+}
+
+.again:active { transform: translateY(1px); }
+
+/* ---------- ろうそく ---------- */
+
+.flame { transition: opacity .25s ease; }
+.is-out .flame { opacity: 0; }
+
+.ignite {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+
+.is-igniting .ignite { animation: ignite .8s cubic-bezier(.2, 1.4, .4, 1) both; }
+
+.flicker {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: flicker 1.4s ease-in-out infinite;
+}
+
+.glow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: glow 2.2s ease-in-out infinite alternate;
+}
+
+.wick { stroke: #3b2a24; }
+.is-out .wick { animation: ember 1.8s ease-out both; }
+
+.smoke {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: smoke 2.4s ease-out forwards;
+}
+
+#shade-candle { transition: opacity 1.2s ease; }
+.is-party #shade-candle { opacity: 0; }
+
+#shade-dark,
+.candle-shade {
+  opacity: var(--dark, 0);
+  transition: opacity .6s ease;
+}
+
+/* ---------- アニメーション ---------- */
+
+@keyframes breathe {
+  0%, 100% { opacity: .85; }
+  50% { opacity: 1; }
+}
+
+@keyframes flicker {
+  0%, 100% { transform: scale(1, 1) skewX(0deg); }
+  20% { transform: scale(.95, 1.06) skewX(2deg); }
+  45% { transform: scale(1.03, .95) skewX(-2.5deg); }
+  70% { transform: scale(.97, 1.04) skewX(1.5deg); }
+}
+
+@keyframes glow {
+  from { transform: scale(.92); opacity: .85; }
+  to { transform: scale(1.08); opacity: 1; }
+}
+
+@keyframes ignite {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes ember {
+  0% { stroke: #ff7a2a; }
+  100% { stroke: #3b2a24; }
+}
+
+@keyframes smoke {
+  0% { opacity: 0; transform: translate(0, 0) scale(.6); }
+  15% { opacity: .5; }
+  50% { transform: translate(calc(var(--dx) * -.6), -36px) scale(1.8); }
+  100% { opacity: 0; transform: translate(var(--dx), -78px) scale(3.2); }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes pop {
+  0% { opacity: 0; transform: translateY(18px) scale(.4); }
+  100% { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flicker, .glow, .prompt { animation: none; }
+  .celebration.is-shown .name span { animation-duration: .01s; animation-delay: .3s; }
+}

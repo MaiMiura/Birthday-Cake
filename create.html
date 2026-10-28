@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>バースデーケーキを贈る</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&display=swap">
+  <style>
+    :root { --ink: #4a2340; --accent: #e0457b; --line: #ead7df; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(165deg, #ffe0ea 0%, #fff0d9 45%, #e2efff 100%);
+      color: var(--ink);
+      font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+      padding: 32px 16px;
+    }
+    main {
+      max-width: 520px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, .8);
+      border-radius: 20px;
+      padding: 28px 22px;
+      box-shadow: 0 10px 30px rgba(74, 35, 64, .1);
+    }
+    h1 { margin: 0 0 .3em; font-size: 1.5rem; }
+    p.lead { margin: 0 0 1.5em; line-height: 1.7; }
+    label { display: block; font-weight: 700; margin: 1.1em 0 .4em; }
+    input, textarea {
+      width: 100%;
+      font: inherit;
+      color: inherit;
+      padding: .7em .8em;
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+    }
+    input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    textarea { min-height: 7em; resize: vertical; line-height: 1.7; }
+    .note { font-size: .85rem; opacity: .7; margin: .4em 0 0; }
+    .result { margin-top: 1.8em; padding-top: 1.4em; border-top: 1.5px dashed var(--line); }
+    .url {
+      word-break: break-all;
+      font-size: .85rem;
+      background: #fff;
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      padding: .7em .8em;
+      margin: .4em 0 1em;
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .actions a, .actions button {
+      font: inherit;
+      font-weight: 700;
+      text-decoration: none;
+      border-radius: 999px;
+      padding: .7em 1.3em;
+      cursor: pointer;
+      border: 0;
+    }
+    .primary { background: var(--ink); color: #fff; }
+    .secondary { background: #fff; color: var(--ink); border: 1.5px solid var(--ink) !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>🎂 バースデーケーキを贈る</h1>
+    <p class="lead">名前とメッセージを入れると、ろうそくを吹き消せるケーキのリンクができます。</p>
+
+    <label for="name">友だちの名前</label>
+    <input id="name" maxlength="40" placeholder="例：はなこ" autocomplete="off">
+
+    <label for="msg">お祝いメッセージ</label>
+    <textarea id="msg" maxlength="400" placeholder="生まれてきてくれてありがとう。&#10;素敵な一年になりますように！"></textarea>
+    <p class="note">空欄のときは上のメッセージが表示されます。</p>
+
+    <label for="candles">ろうそくの数（1〜12）</label>
+    <input id="candles" type="number" min="1" max="12" value="5" inputmode="numeric">
+
+    <div class="result">
+      <strong>贈るリンク</strong>
+      <div class="url" id="url"></div>
+      <div class="actions">
+        <button type="button" class="primary" id="copy">リンクをコピー</button>
+        <button type="button" class="secondary" id="share" hidden>共有する</button>
+        <a class="secondary" id="preview" target="_blank" rel="noopener">プレビュー</a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
+      const base = new URL(location.protocol === 'file:' ? 'index.html' : './', location.href);
+
+      function build() {
+        const url = new URL(base);
+        const name = $('name').value.trim();
+        const msg = $('msg').value.trim();
+        const n = Math.min(12, Math.max(1, parseInt($('candles').value, 10) || 5));
+        if (name) url.searchParams.set('name', name);
+        if (msg) url.searchParams.set('msg', msg);
+        if (n !== 5) url.searchParams.set('candles', n);
+        return url.toString();
+      }
+
+      function update() {
+        const url = build();
+        $('url').textContent = url;
+        $('preview').href = url;
+      }
+
+      ['name', 'msg', 'candles'].forEach((id) => $(id).addEventListener('input', update));
+
+      $('copy').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(build());
+          $('copy').textContent = 'コピーしました！';
+        } catch {
+          $('copy').textContent = 'コピーできませんでした';
+        }
+        setTimeout(() => { $('copy').textContent = 'リンクをコピー'; }, 1800);
+      });
+
+      if (navigator.share) {
+        $('share').hidden = false;
+        $('share').addEventListener('click', () => {
+          navigator.share({ title: 'Happy Birthday!', text: 'ケーキを用意したよ🎂', url: build() }).catch(() => {});
+        });
+      }
+
+      update();
+    })();
+  </script>
+</body>
+</html>

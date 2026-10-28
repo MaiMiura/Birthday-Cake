@@ -4,8 +4,22 @@
   // ---------- 設定 ----------
 
   const DEFAULT_MESSAGE = '生まれてきてくれてありがとう。\n素敵な一年になりますように！';
-  const CANDLE_COLORS = ['#ff8fab', '#8ecae6', '#ffd166', '#95d5b2', '#cdb4db', '#ffb4a2'];
-  const CONFETTI_COLORS = ['#ff5d8f', '#ffc233', '#4cc9f0', '#80ed99', '#b892ff', '#ff8c42', '#ffffff'];
+
+  // 写真ごとのろうそくの位置（写真のピクセル座標）。x と、炎の先端の y、ろうそくの頭の y
+  const THEMES = {
+    strawberry: {
+      photo: 'assets/strawberry-cake.webp',
+      candles: [[287, 150, 260], [376, 162, 270], [476, 95, 216], [581, 157, 262], [685, 150, 260]],
+      confetti: ['#ff6fa3', '#ffb3c7', '#ffd166', '#7fd8f5', '#a78bfa', '#8de0a5', '#ffffff', '#ff8c42'],
+      smoke: '#fff6f0',
+    },
+    chocolate: {
+      photo: 'assets/chocolate-cake.webp',
+      candles: [[283, 145, 259], [376, 154, 267], [474, 90, 214], [581, 152, 263], [684, 145, 257]],
+      confetti: ['#d4af37', '#f5d77a', '#b8860b', '#fff4c2', '#e8e8e8', '#c0c0c0', '#8a6d2f'],
+      smoke: '#d9d4cf',
+    },
+  };
 
   // 息の判定は「ちょっと甘め」。強く吹けば 0.3〜0.5 秒、そこそこでも 1 秒ほどで消える。
   const BLOW_RATE = 2.4;     // 吹いている間に炎の体力が減る速さ（強さ 1 のとき / 秒）
@@ -14,17 +28,15 @@
   const params = new URLSearchParams(location.search);
   const friendName = (params.get('name') || '').trim().slice(0, 40);
   const message = (params.get('msg') || '').trim().slice(0, 400) || DEFAULT_MESSAGE;
-  const candleCount = clamp(parseInt(params.get('candles'), 10) || 5, 1, 12);
+  const theme = THEMES[document.documentElement.dataset.theme] || THEMES.strawberry;
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const $ = (id) => document.getElementById(id);
   const svg = $('cake');
-  const promptEl = $('prompt');
   const hintEl = $('hint');
   const againBtn = $('again');
   const celebrationEl = $('celebration');
-  const roomGlow = $('room-glow');
 
   let state = 'lit'; // lit → dark → party
   const candles = [];
@@ -40,125 +52,39 @@
     return node;
   }
 
-  // 毎回同じ飾りつけになるよう、シード付きの乱数を使う
-  function seeded(seed) {
-    return () => {
-      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
-      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-  }
-
   const rand = (a, b) => a + Math.random() * (b - a);
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-  // ---------- ケーキの飾りつけ ----------
-
-  const TOP = { cx: 200, cy: 215, rx: 115, ry: 26 };
-  const frontEdge = (x) => TOP.cy + TOP.ry * Math.sqrt(Math.max(0, 1 - ((x - TOP.cx) / TOP.rx) ** 2));
-
-  function buildDecorations() {
-    const r = seeded(20);
-
-    // 上から垂れるクリーム
-    const drips = [];
-    for (let x = 95; x < 310; x += 17 + r() * 10) drips.push({ x, len: 8 + r() * 20, w: 5 + r() * 3 });
-    let d = `M${TOP.cx - TOP.rx} ${TOP.cy}`;
-    for (let x = TOP.cx - TOP.rx; x <= TOP.cx + TOP.rx; x += 2) {
-      let off = 5;
-      for (const dr of drips) off += dr.len * Math.exp(-(((x - dr.x) / dr.w) ** 2));
-      d += ` L${x} ${(frontEdge(x) + off).toFixed(1)}`;
-    }
-    for (let x = TOP.cx + TOP.rx; x >= TOP.cx - TOP.rx; x -= 4) d += ` L${x} ${frontEdge(x).toFixed(1)}`;
-    el('path', { d: d + 'Z', fill: '#fbeee6' }, $('drips'));
-
-    // 側面のスプリンクル
-    const sprinkles = $('sprinkles');
-    for (let i = 0; i < 34; i++) {
-      const x = 95 + r() * 210;
-      const y = frontEdge(x) + 30 + r() * 60;
-      if (y > 262 && y < 292) continue; // リボンの上は避ける
-      el('rect', {
-        x: -3.5, y: -1.2, width: 7, height: 2.4, rx: 1.2,
-        fill: CANDLE_COLORS[i % CANDLE_COLORS.length],
-        transform: `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${Math.floor(r() * 180)})`,
-      }, sprinkles);
-    }
-
-    // ふちのホイップといちご（奥から順に描く）
-    const rim = $('rim');
-    const items = [];
-    const N = 18;
-    for (let i = 0; i < N; i++) {
-      const a = (i / N) * Math.PI * 2;
-      items.push({ x: TOP.cx + Math.cos(a) * 104, y: TOP.cy - 2 + Math.sin(a) * 20, berry: i % 2 === 0 });
-    }
-    items.sort((p, q) => p.y - q.y);
-    for (const it of items) {
-      const g = el('g', { transform: `translate(${it.x.toFixed(1)} ${it.y.toFixed(1)})` }, rim);
-      el('ellipse', { cx: 0, cy: 1, rx: 11, ry: 7.5, fill: '#fffaf6' }, g);
-      el('ellipse', { cx: -3, cy: -1.5, rx: 4, ry: 2.2, fill: '#fff', opacity: .9 }, g);
-      if (it.berry) {
-        const b = el('g', { transform: 'translate(0 -6)' }, g);
-        el('path', { d: 'M0 -7 C6 -7 8 -1 6 3 C4 7 1 9 0 9 C-1 9 -4 7 -6 3 C-8 -1 -6 -7 0 -7Z', fill: '#e63950' }, b);
-        el('path', { d: 'M-4 -7 L0 -4 L4 -7 L1 -8 L0 -10 L-1 -8Z', fill: '#4caf50' }, b);
-        for (const [sx, sy] of [[-2.5, -2], [2.5, -1], [0, 3], [-3, 3], [3, 4]]) {
-          el('circle', { cx: sx, cy: sy, r: .7, fill: '#ffe08a' }, b);
-        }
-        el('ellipse', { cx: -2.5, cy: -3.5, rx: 1.4, ry: 2.2, fill: '#fff', opacity: .35 }, b);
-      }
-    }
-  }
-
   // ---------- ろうそく ----------
 
-  const FLAME_OUTER = 'M0 0 C-9 -5 -10 -17 0 -36 C10 -17 9 -5 0 0Z';
-  const FLAME_INNER = 'M0 -1 C-4 -4 -5 -11 0 -20 C5 -11 4 -4 0 -1Z';
+  // 炎の形（根元が原点、高さ 105）
+  const FLAME_OUTER = 'M0 0 C-17 -3 -19 -40 0 -105 C19 -40 17 -3 0 0Z';
+  const FLAME_CORE = 'M0 -8 C-10 -11 -11 -38 0 -82 C11 -38 10 -11 0 -8Z';
 
-  function candlePositions(n) {
-    if (n === 1) return [{ x: 200, y: 214 }];
-    // ケーキの上に輪っか状に並べる。手前と奥のろうそくが重ならないよう、偶数本のときは少し回す
-    const pts = [];
-    const rx = Math.min(74, 30 + n * 6);
-    const ry = rx * (TOP.ry / TOP.rx) * 0.95;
-    const offset = Math.PI / 2 + (n % 2 === 0 ? Math.PI / n / 2 : 0);
-    for (let i = 0; i < n; i++) {
-      const a = offset + (i / n) * Math.PI * 2;
-      pts.push({ x: 200 + Math.cos(a) * rx, y: 212 + Math.sin(a) * ry });
-    }
-    return pts.sort((p, q) => p.y - q.y);
-  }
-
+  // 写真の炎は消してあるので、その場所にアプリの炎を重ねる
   function buildCandles() {
     const group = $('candles');
-    candlePositions(candleCount).forEach((p, i) => {
-      const h = 50 + Math.random() * 6;
-      const color = CANDLE_COLORS[i % CANDLE_COLORS.length];
-      const g = el('g', { class: 'candle is-igniting', transform: `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})` }, group);
+    theme.candles.forEach(([x, tip, top], i) => {
+      const g = el('g', { class: 'candle is-igniting', transform: `translate(${x} ${top})` }, group);
+      el('path', { class: 'wick', d: 'M0 2 q2.5 -10 -1 -22', fill: 'none', 'stroke-width': 3.2, 'stroke-linecap': 'round' }, g);
 
-      el('ellipse', { cx: 0, cy: 0, rx: 7, ry: 2.5, fill: '#000', opacity: .12 }, g);
-      el('rect', { x: -4.5, y: -h, width: 9, height: h, rx: 2.5, fill: color }, g);
-      el('rect', { x: -4.5, y: -h, width: 9, height: h, rx: 2.5, fill: 'url(#p-stripes)' }, g);
-      el('rect', { x: -3.5, y: -h + 1, width: 2.4, height: h - 2, rx: 1.2, fill: '#fff', opacity: .3 }, g);
-      el('rect', { class: 'candle-shade', x: -4.5, y: -h, width: 9, height: h, rx: 2.5, fill: '#0d0614' }, g);
-      el('path', { class: 'wick', d: `M0 ${-h} q1.2 -3 0 -6`, fill: 'none', 'stroke-width': 1.6, 'stroke-linecap': 'round' }, g);
-
-      const anchor = el('g', { transform: `translate(0 ${-h - 4})` }, g);
+      const anchor = el('g', { transform: 'translate(0 -6)' }, g);
       const flame = el('g', { class: 'flame' }, anchor);
+      const size = (top - 6 - tip) / 105;
       const ignite = el('g', { class: 'ignite', style: `animation-delay:${(0.3 + i * 0.12).toFixed(2)}s` }, flame);
-      el('circle', { class: 'glow', cx: 0, cy: -14, r: 28, fill: 'url(#g-glow)' }, ignite);
+      const sized = el('g', { transform: `scale(${size.toFixed(3)})` }, ignite);
+      el('ellipse', { class: 'glow', cx: 0, cy: -48, rx: 95, ry: 115, fill: 'url(#g-glow)' }, sized);
       const flick = el('g', {
         class: 'flicker',
         style: `animation-duration:${rand(1.1, 1.8).toFixed(2)}s;animation-delay:-${rand(0, 2).toFixed(2)}s`,
-      }, ignite);
-      el('path', { d: FLAME_OUTER, fill: 'url(#g-flame)' }, flick);
-      el('path', { d: FLAME_INNER, fill: '#fffbe8', opacity: .95 }, flick);
-      el('ellipse', { cx: 0, cy: -3, rx: 2.2, ry: 3.5, fill: '#7ab8ff', opacity: .5 }, flick);
+      }, sized);
+      el('path', { d: FLAME_OUTER, fill: 'url(#g-flame)', filter: 'url(#f-soft)' }, flick);
+      el('path', { d: FLAME_CORE, fill: 'url(#g-core)', filter: 'url(#f-soft)' }, flick);
+      el('ellipse', { cx: 0, cy: -9, rx: 7, ry: 11, fill: '#5f8dff', opacity: .45, filter: 'url(#f-soft)' }, flick);
 
       candles.push({
         g, flame, anchor,
-        x: p.x, fy: p.y - h - 4,
+        x, fy: top - 6, height: top - 6 - tip,
         lit: true,
         health: 1,
         lean: 0,
@@ -181,23 +107,23 @@
   }
 
   function puffSmoke(c) {
-    const smoke = el('g', { transform: 'translate(0 -4)' }, c.anchor);
+    const smoke = el('g', { transform: 'translate(0 -18) scale(3)', filter: 'url(#f-smoke)' }, c.anchor);
     const drift = rand(-14, 14);
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 7; i++) {
       el('circle', {
         class: 'smoke',
         cx: rand(-1.5, 1.5), cy: -i * 2, r: rand(2.5, 4),
-        fill: '#d8d0e2',
-        style: `--dx:${(drift + rand(-6, 6)).toFixed(1)}px;animation-delay:${(i * 0.13).toFixed(2)}s`,
+        fill: theme.smoke,
+        style: `--dx:${(drift + rand(-6, 6)).toFixed(1)}px;animation-delay:${(i * 0.16).toFixed(2)}s`,
       }, smoke);
     }
-    setTimeout(() => smoke.remove(), 3200);
+    setTimeout(() => smoke.remove(), 4600);
   }
 
   function updateLighting() {
     const lit = candles.filter((c) => c.lit).length / candles.length;
-    roomGlow.style.opacity = lit.toFixed(2);
-    svg.style.setProperty('--dark', state === 'party' ? 0 : ((1 - lit) * 0.6).toFixed(2));
+    const dark = state === 'party' ? 0 : (1 - lit) * 0.45 + (state === 'dark' ? 0.15 : 0);
+    document.documentElement.style.setProperty('--dark', dark.toFixed(2));
   }
 
   // ---------- マイク（息の判定） ----------
@@ -326,7 +252,7 @@
     let bestD = Infinity;
     for (const c of candles) {
       if (!c.lit) continue;
-      const d = Math.hypot(p.x - c.x, (p.y - (c.fy - 15)) * 0.6);
+      const d = Math.hypot(p.x - c.x, (p.y - (c.fy - c.height / 2)) * 0.6);
       if (d < bestD) { bestD = d; best = c; }
     }
     if (best) {
@@ -382,6 +308,7 @@
     clearTimeout(helpTimer);
     setHint('');
     document.body.className = 'is-dark';
+    updateLighting();
     setTimeout(celebrate, 1100);
   }
 
@@ -467,7 +394,7 @@
         w: rand(6, 10), h: rand(9, 15),
         term: rand(110, 210),
         sway: rand(15, 45),
-        color: pick(CONFETTI_COLORS),
+        color: pick(theme.confetti),
         shape: r < 0.25 ? 'circle' : r < 0.4 ? 'ribbon' : 'rect',
       });
     }
@@ -601,7 +528,7 @@
   // ---------- はじまり ----------
 
   fillGreeting();
-  buildDecorations();
+  $('photo').src = theme.photo;
   buildCandles();
   updateLighting();
   setHint('');

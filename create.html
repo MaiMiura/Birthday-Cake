@@ -41,6 +41,13 @@
     input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
     textarea { min-height: 7em; resize: vertical; line-height: 1.7; }
     .note { font-size: .85rem; opacity: .7; margin: .4em 0 0; }
+    .themes { border: 0; padding: 0; margin: 1.1em 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .themes legend { font-weight: 700; padding: 0; margin-bottom: .4em; }
+    .theme { position: relative; margin: 0; cursor: pointer; text-align: center; font-weight: 700; }
+    .theme input { position: absolute; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .theme img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; object-position: center 60%; border-radius: 14px; border: 3px solid transparent; margin-bottom: .3em; }
+    .theme input:checked + img { border-color: var(--accent); }
+    .theme input:focus-visible + img { outline: 2px solid var(--ink); outline-offset: 2px; }
     .result { margin-top: 1.8em; padding-top: 1.4em; border-top: 1.5px dashed var(--line); }
     .url {
       word-break: break-all;
@@ -77,8 +84,11 @@
     <textarea id="msg" maxlength="400" placeholder="生まれてきてくれてありがとう。&#10;素敵な一年になりますように！"></textarea>
     <p class="note">空欄のときは上のメッセージが表示されます。</p>
 
-    <label for="candles">ろうそくの数（1〜12）</label>
-    <input id="candles" type="number" min="1" max="12" value="5" inputmode="numeric">
+    <fieldset class="themes">
+      <legend>ケーキ</legend>
+      <label class="theme"><input type="radio" name="theme" value="strawberry" checked><img src="assets/strawberry-cake.webp" alt=""><span>いちご</span></label>
+      <label class="theme"><input type="radio" name="theme" value="chocolate"><img src="assets/chocolate-cake.webp" alt=""><span>チョコ</span></label>
+    </fieldset>
 
     <div class="result">
       <strong>贈るリンク</strong>
@@ -100,10 +110,10 @@
         const url = new URL(base);
         const name = $('name').value.trim();
         const msg = $('msg').value.trim();
-        const n = Math.min(12, Math.max(1, parseInt($('candles').value, 10) || 5));
+        const theme = document.querySelector('input[name="theme"]:checked').value;
         if (name) url.searchParams.set('name', name);
         if (msg) url.searchParams.set('msg', msg);
-        if (n !== 5) url.searchParams.set('candles', n);
+        url.searchParams.set('theme', theme);
         return url.toString();
       }
 
@@ -113,7 +123,8 @@
         $('preview').href = url;
       }
 
-      ['name', 'msg', 'candles'].forEach((id) => $(id).addEventListener('input', update));
+      ['name', 'msg'].forEach((id) => $(id).addEventListener('input', update));
+      document.querySelectorAll('input[name="theme"]').forEach((r) => r.addEventListener('change', update));
 
       $('copy').addEventListener('click', async () => {
         try {

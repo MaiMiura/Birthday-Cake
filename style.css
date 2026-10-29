@@ -16,6 +16,9 @@
   --btn-text: #fff;
   --btn-border: transparent;
   --divider: #d98a8f;
+  --share-text: #5c1f35;
+  --share-bg: rgba(255, 246, 240, .78);
+  --share-border: #5c1f35;
 }
 
 [data-theme="chocolate"] {
@@ -29,6 +32,9 @@
   --btn-text: #f6efe6;
   --btn-border: rgba(214, 178, 110, .75);
   --divider: #c9a45c;
+  --share-text: #f3e3c2;
+  --share-bg: rgba(18, 16, 16, .55);
+  --share-border: rgba(214, 178, 110, .75);
 }
 
 * { box-sizing: border-box; }
@@ -195,13 +201,25 @@ body {
   cursor: pointer;
 }
 
-.again {
+.actions {
   position: absolute;
   left: 50%;
-  bottom: max(7%, env(safe-area-inset-bottom));
+  bottom: max(5%, env(safe-area-inset-bottom));
   transform: translateX(-50%);
   z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  animation: rise-btn .8s 3.2s ease-out both;
+}
+
+.actions[hidden] { display: none; }
+
+.btn {
   white-space: nowrap;
+  text-align: center;
+  text-decoration: none;
   font: inherit;
   font-weight: 600;
   font-size: clamp(.95rem, 4vw, 1.1rem);
@@ -213,7 +231,16 @@ body {
   padding: .85em 2em;
   box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
   cursor: pointer;
-  animation: rise-btn .8s 3.2s ease-out both;
+}
+
+/* 共有ボタンは控えめに、枠線だけ */
+.share {
+  color: var(--share-text);
+  background: var(--share-bg);
+  border-color: var(--share-border);
+  box-shadow: none;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
 }
 
 /* ---------- お祝い ---------- */

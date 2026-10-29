@@ -35,7 +35,7 @@
   const $ = (id) => document.getElementById(id);
   const svg = $('cake');
   const hintEl = $('hint');
-  const againBtn = $('again');
+  const actionsEl = $('actions');
   const celebrationEl = $('celebration');
 
   let state = 'lit'; // lit → dark → party
@@ -320,7 +320,7 @@
     celebrationEl.hidden = false;
     void celebrationEl.offsetWidth; // アニメーションを最初から再生させる
     celebrationEl.classList.add('is-shown');
-    againBtn.hidden = false;
+    actionsEl.hidden = false;
     confetti.start();
     music.play();
   }
@@ -330,7 +330,7 @@
     document.body.className = 'is-lit';
     music.stop();
     confetti.stop();
-    againBtn.hidden = true;
+    actionsEl.hidden = true;
     celebrationEl.classList.add('is-hiding');
     setTimeout(() => { if (state !== 'party') celebrationEl.hidden = true; }, 500);
     candles.forEach((c, i) => {
@@ -346,7 +346,9 @@
     refreshMicHint();
   }
 
-  againBtn.addEventListener('click', relight);
+  $('again').addEventListener('click', relight);
+  // 共有ボタンは設定画面へ。今のケーキを選んだ状態で開く
+  $('share').href = `create.html?theme=${document.documentElement.dataset.theme}`;
 
   function fillGreeting() {
     const nameEl = $('name');

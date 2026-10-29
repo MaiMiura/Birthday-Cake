@@ -143,6 +143,11 @@
         });
       }
 
+      // ケーキの画面から来たときは、そのケーキを選んだ状態にしておく
+      const initial = new URLSearchParams(location.search).get('theme');
+      const radio = initial && document.querySelector(`input[name="theme"][value="${initial === 'chocolate' ? 'chocolate' : 'strawberry'}"]`);
+      if (radio) radio.checked = true;
+
       update();
     })();
   </script>
